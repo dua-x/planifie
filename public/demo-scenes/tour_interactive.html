@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planifié - Tour Interactif Premium</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --bg: #020617;
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Background Ambient Glows */
+    .glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+      filter: blur(120px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-1 { top: -200px; left: -200px; }
+    .glow-2 { bottom: -200px; right: -200px; }
+
+    /* Cinematic Stage */
+    .stage {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      z-index: 10;
+    }
+
+    .slide-wrapper {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: 100%;
+      position: relative;
+      background: #000;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    /* Progress Indicator (Top) */
+    .tour-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 100;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #818cf8);
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 15px var(--primary);
+    }
+
+    /* Slides */
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .slide iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Narrative Box (Glassmorphism) */
+    .narrative-container {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      width: 90%;
+      max-width: 800px;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 1.5rem 2rem;
+      opacity: 0;
+      transition: all 0.8s 0.3s ease;
+      z-index: 50;
+      text-align: center;
+    }
+
+    .narrative-container.active {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .narrative-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      line-height: 1.6;
+      background: linear-gradient(to bottom, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+
+    .slide.active .narrative-text {
+      animation: textRevealFade 0.8s 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    @keyframes textRevealFade {
+      from { opacity: 0; transform: translateY(10px); filter: blur(4px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
+    /* Pulse Point */
+    .pulse-point {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: rgba(99, 102, 241, 0.4);
+      border-radius: 50%;
+      z-index: 40;
+      cursor: help;
+    }
+    .pulse-point::before {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      border: 2px solid var(--primary);
+      border-radius: 50%;
+      animation: pulse-ring 2s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+
+    /* Floating Navigation Controls */
+    /* ===== MINIMALIST COMPACT NAVIGATION ===== */
+    .nav-controls {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 0.4rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 1000;
+    }
+
+    .btn-nav {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      color: var(--text-dim);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav:hover:not(.disabled) {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text);
+    }
+
+    .btn-nav.disabled {
+      opacity: 0.2;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      width: auto !important;
+      padding: 0 1rem !important;
+      background: var(--primary) !important;
+      color: white !important;
+      font-weight: 700;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .slide-counter {
+      padding: 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .counter-label { display: none; } /* Simplify */
+
+    .counter-val {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      font-family: inherit;
+    }
+
+    .progress-circle-mini { display: none; } /* Simplify */
+
+    /* Tooltip simulation on hover */
+    .btn-nav::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 120%;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s;
+      border: 1px solid var(--glass-border);
+    }
+    .btn-nav:hover:not(.disabled)::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Hide/Show logic */
+    .hidden { display: none !important; }
+
+    @media (max-width: 768px) {
+      .stage { padding: 1rem; }
+      .narrative-text { font-size: 0.9rem; }
+      .nav-controls { bottom: 1rem; width: 90%; justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+
+  <div class="stage">
+    <div class="slide-wrapper">
+      <!-- Progress Bar -->
+      <div class="tour-progress">
+        <div class="progress-fill" id="progress-bar"></div>
+      </div>
+
+      <!-- Slide 0: Animation Intro -->
+      <div class="slide active" id="slide-0" data-type="iframe">
+        <iframe src="scene0_intro.html?tour=true&autoplay=true" id="frame-0"></iframe>
+      </div>
+
+      <!-- Slide 1: Animation Probleme -->
+      <div class="slide" id="slide-1" data-type="iframe">
+        <iframe data-src="scene1_probleme.html?tour=true&autoplay=true" id="frame-1"></iframe>
+      </div>
+
+      <!-- Slide 2: Transition Solution -->
+      <div class="slide" id="slide-2" data-type="iframe">
+        <iframe data-src="scene2_solution.html?tour=true&autoplay=true" id="frame-2"></iframe>
+      </div>
+
+      <!-- Slide 3: Interface Superviseur -->
+      <div class="slide" id="slide-3" data-type="iframe">
+        <iframe data-src="scene3_supervisor.html?tour=true&autoplay=true" id="frame-3"></iframe>
+      </div>
+
+      <!-- Slide 4: Besoins & Shifts -->
+      <div class="slide" id="slide-4" data-type="iframe">
+        <iframe data-src="scene4_manager.html?tour=true&autoplay=true" id="frame-4"></iframe>
+      </div>
+
+      <!-- Slide 5: Intelligence Artificielle -->
+      <div class="slide" id="slide-5" data-type="iframe">
+        <iframe data-src="scene5_ai.html?tour=true&autoplay=true" id="frame-5"></iframe>
+      </div>
+
+      
+      <!-- Narrative Container -->
+      <div class="narrative-container">
+        <div class="narrative-text" id="narrative-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-controls">
+    <button class="btn-nav disabled" id="prev-btn" title="Précédent">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    
+    <div class="slide-counter">
+      <span class="counter-val"><span id="current-num">1</span> / 6</span>
+    </div>
+
+    <button class="btn-nav btn-primary" id="next-btn">
+      <span id="next-text">Suivant</span>
+    </button>
+  </div>
+
+  <div class="audio-container hidden">
+    <audio id="audio-0" src="../audio/scene0-1.mp3"></audio>
+    <audio id="audio-1" src="../audio/scene1.mp3"></audio>
+    <audio id="audio-2" src="../audio/scene2.mp3"></audio>
+    <audio id="audio-3" src="../audio/scene3.mp3"></audio>
+    <audio id="audio-4" src="../audio/scene4.mp3"></audio>
+    <audio id="audio-5" src="../audio/scene5.mp3"></audio>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const totalSlides = 6;
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progress-bar');
+    const currentNumDisplay = document.getElementById('current-num');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const audios = document.querySelectorAll('audio');
+
+    const narratives = [
+      "Le pilotage de vos équipes est le cœur de votre rentabilité. Mais chaque semaine, c'est le même défi complexe : jongler avec des dizaines de collaborateurs et des contraintes infinies.",
+      "Excel, WhatsApp, imprévus... Chaque erreur coûte cher en argent, en énergie et en confiance. Et si tout cela pouvait être résolu en quelques secondes ?",
+      "Découvrez Planifié. Une interface simple, accessible depuis n'importe quel navigateur, sans aucune installation. Ici, chaque collaborateur devient acteur de son temps. En quelques clics, ils saisissent leurs disponibilités, consultent leur planning en temps réel et déposent leurs demandes d'absence.",
+      "Côté supervision, le dashboard offre une vue d'ensemble instantanée. Validez les demandes, suivez les présences en temps réel et gérez votre effectif avec une précision chirurgicale.",
+      "Oubliez la collecte manuelle des disponibilités. Planifié synchronise intelligemment les retours via WhatsApp et l'App pour centraliser instantanément les vœux de votre équipe, tout en respectant vos besoins en effectif.",
+      "La puissance de l'IA au service de votre logistique. Notre moteur analyse des millions de combinaisons pour générer un planning mathématiquement parfait en un clic.",
+      "Un planning parfait ne se construit plus, il se génère. Réservez dès maintenant un rendez-vous avec notre expert en digitalisation."
+    ];
+
+    function updateSlides() {
+      slides.forEach((s, i) => {
+        const isActive = i === currentSlide;
+        s.classList.toggle('active', isActive);
+        
+        const iframe = s.querySelector('iframe');
+        if (iframe) {
+          if (isActive) {
+            // Always reload to restart animation/internal audio
+            const targetSrc = iframe.getAttribute('data-src') || iframe.src;
+            if (targetSrc && targetSrc !== 'about:blank') {
+              iframe.src = targetSrc;
+              // On mobile, even with a click on 'Next', we might need to nudge the iframe
+              setTimeout(() => {
+                iframe.contentWindow.postMessage('play-audio', '*');
+              }, 600);
+            }
+          } else {
+            // Stop the iframe when not active to kill audio/scripts
+            if (iframe.src && iframe.src !== 'about:blank') {
+              // Store original src in data-src if not already there
+              if (!iframe.getAttribute('data-src')) {
+                iframe.setAttribute('data-src', iframe.src);
+              }
+              iframe.src = 'about:blank';
+            }
+          }
+        }
+      });
+
+      // Update Progress
+      progressBar.style.width = ((currentSlide + 1) / totalSlides) * 100 + '%';
+      
+      // Update Counter
+      currentNumDisplay.innerText = currentSlide + 1;
+      
+      // Update Buttons
+      prevBtn.classList.toggle('disabled', currentSlide === 0);
+      
+      // Update Narrative
+      const narrativeContainer = document.querySelector('.narrative-container');
+      const narrativeText = document.getElementById('narrative-text');
+      if (narrativeText && narrativeContainer) {
+        narrativeContainer.classList.remove('active');
+        // Small timeout to re-trigger the transition
+        setTimeout(() => {
+          narrativeText.innerText = narratives[currentSlide] || "";
+          narrativeContainer.classList.add('active');
+        }, 100);
+      }
+
+      // Final slide handling
+      const nextText = document.getElementById('next-text');
+      if (nextText) {
+        if (currentSlide === totalSlides - 1) {
+          nextText.innerText = "Terminer";
+        } else {
+          nextText.innerText = "Suivant";
+        }
+      }
+    }
+
+    // Handle Keyboard Navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') nextBtn.click();
+      if (e.key === 'ArrowLeft') prevBtn.click();
+    });
+
+    // Auto-advance listener from iframes
+    window.addEventListener('message', (event) => {
+      if (event.data === 'scene-ended') {
+        console.log('🎬 Animation finished, auto-advancing...');
+        setTimeout(() => {
+          if (currentSlide < totalSlides - 1) {
+            currentSlide++;
+            updateSlides();
+          }
+        }, 1500); // Small pause before auto-advance
+      }
+      
+      // FORWARD play-audio to the current active iframe (from parent React)
+      if (event.data === 'play-audio') {
+        const activeIframe = slides[currentSlide].querySelector('iframe');
+        if (activeIframe) {
+          activeIframe.contentWindow.postMessage('play-audio', '*');
+        }
+      }
+    });
+
+    nextBtn.onclick = () => {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+      } else {
+        currentSlide = 0;
+        // Reset iframes to original state if needed
+        location.reload();
+      }
+      updateSlides();
+    };
+
+    prevBtn.onclick = () => {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlides();
+      }
+    };
+
+    // Initial load
+    updateSlides();
+  </script>
+
+</body>
+</html>

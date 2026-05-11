@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #020617; height: 100vh; font-family: 'Outfit', sans-serif; overflow: hidden; }
+    .browser-window { width: 100%; height: 100%; background: #f1f5f9; overflow: hidden; display: flex; flex-direction: column; position: absolute; inset: 0; }
+    .browser-header { height: 40px; background: #e2e8f0; display: flex; align-items: center; padding: 0 12px; gap: 10px; border-bottom: 1px solid #cbd5e1; flex-shrink: 0; }
+    .dots { display: flex; gap: 5px; } .dot { width: 10px; height: 10px; border-radius: 50%; } .dot.red { background: #ff5f57; } .dot.yellow { background: #ffbd2e; } .dot.green { background: #28c940; }
+    .address-bar { flex: 1; height: 24px; background: white; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 11px; color: #64748b; }
+    .browser-content { flex: 1; position: relative; background: white; overflow: hidden; }
+    .grid-pattern { background-image: linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px); background-size: 27px 27px; }
+    .fake-cursor { position: absolute; width: 20px; height: 20px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>') no-repeat; z-index: 2000; pointer-events: none; top: 60%; left: 60%; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+    .click-ring { position: absolute; width: 40px; height: 40px; border: 3px solid #4f46e5; border-radius: 50%; transform: scale(0); opacity: 0; z-index: 999; pointer-events: none; }
+    .click-anim { animation: clickPulse 0.4s ease-out forwards; }
+    @keyframes clickPulse { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .typing-cursor::after { content: '|'; animation: blink 0.8s infinite; color: #4285F4; margin-left: 2px; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; } .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    .nav-item .indicator { display: none; } .nav-item.active .indicator { display: block; }
+  </style>
+</head>
+<body class="bg-slate-950">
+  <div class="fake-cursor" id="cursor"></div>
+  <div class="click-ring" id="click-ring"></div>
+  <div class="browser-window">
+    <div class="browser-header">
+      <div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+      <div class="address-bar" id="browser-url">google.com</div>
+    </div>
+    <div class="browser-content" id="viewport">
+      <!-- GOOGLE -->
+      <div id="google-view" class="absolute inset-0 bg-white flex flex-col items-center pt-32 px-4 transition-opacity duration-500">
+        <div class="flex text-7xl font-bold mb-10 tracking-tighter"><span class="text-blue-500">G</span><span class="text-red-500">o</span><span class="text-yellow-500">o</span><span class="text-blue-500">g</span><span class="text-green-500">l</span><span class="text-red-500">e</span></div>
+        <div class="w-full max-w-[600px] h-[52px] border border-slate-200 rounded-full flex items-center px-5 gap-4 shadow-sm"><svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-3m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><div id="search-text" class="text-lg text-slate-800 font-medium"></div></div>
+      </div>
+      <!-- RESULTS -->
+      <div id="results-view" class="absolute inset-0 bg-white p-20 opacity-0 pointer-events-none transition-opacity duration-300"><div class="max-w-2xl"><div id="main-result" class="group cursor-pointer"><div class="text-sm text-slate-900 mb-1">https://planifie.dz</div><div class="text-2xl text-blue-700 font-medium mb-1 underline">Planifié | Système de planification intelligente</div><div class="text-sm text-slate-600 leading-relaxed">La solution n°1 en Algérie pour la gestion des plannings complexes.</div></div></div></div>
+      <!-- LOGIN -->
+      <div id="login-view" class="absolute inset-0 opacity-0 pointer-events-none transition-all duration-700 transform scale(1.05) overflow-y-auto custom-scroll">
+        <div class="flex min-h-full bg-slate-50">
+          <!-- Left side - Brand Identity -->
+          <div class="hidden lg:flex lg:w-2/5 bg-slate-900 flex-col justify-between p-12 relative overflow-hidden border-r border-slate-800">
+            <div class="absolute inset-0 opacity-[0.1]" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 27px 27px"></div>
+            
+            <div class="relative z-10">
+              <div class="flex justify-center items-center gap-6 my-16">
+                <div class="w-20 h-20 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
+                  <img src="../logo.png" alt="Logo" class="w-14 h-14 object-contain">
+                </div>
+                <span class="text-3xl font-black tracking-medium text-white">Planifié</span>
+              </div>
+
+              <div class="space-y-8">
+                <div class="h-1.5 w-16 bg-indigo-500 rounded-full"></div>
+                <p class="text-base text-slate-400 max-w-sm leading-relaxed font-medium">
+                  Accédez à vos outils de planification d'équipe, de gestion des transports et de suivi opérationnel en un seul endroit.
+                </p>
+              </div>
+            </div>
+
+            <!-- Professional Feature List -->
+            <div class="relative z-10 space-y-6">
+              <div class="flex items-center gap-4 group cursor-default">
+                <div class="w-10 h-10 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-slate-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-200">Gestion d'Équipe</h3>
+                  <p class="text-xs text-slate-500 font-medium">Collaborateurs & Superviseurs</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-4 group cursor-default">
+                <div class="w-10 h-10 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-slate-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-200">Optimisation Horaire</h3>
+                  <p class="text-xs text-slate-500 font-medium">Shifts & Disponibilités</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-4 group cursor-default">
+                <div class="w-10 h-10 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-slate-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-200">Réseau Transport</h3>
+                  <p class="text-xs text-slate-500 font-medium">Lignes & Affectations</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative z-10">
+              <div class="flex items-center gap-2 text-slate-500 border-t border-white/5 pt-8 w-fit pr-8">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+                <p class="text-[10px] font-black uppercase tracking-[0.2em]">Logistics Division • 2026</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right side - Login Card -->
+          <div class="w-full lg:w-3/5 flex items-center justify-center p-6 bg-slate-50">
+            <div class="w-full max-w-[460px]">
+              <!-- Mobile Logo -->
+              <div class="lg:hidden flex justify-center items-center gap-6 my-8">
+                <div class="w-20 h-20 rounded-2xl bg-slate-900/80 border border-white/15 flex items-center justify-center shadow-2xl backdrop-blur-lg">
+                  <img src="../logo.png" alt="Logo" class="w-14 h-14 object-contain">
+                </div>
+                <span class="text-3xl font-black tracking-medium text-slate-900">Planifié</span>
+              </div>
+    
+              <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/60 p-12">
+                <div class="space-y-2 mb-10 text-left">
+                  <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Bon retour !</h2>
+                  <div class="h-1 w-8 bg-slate-900 mt-2 rounded-full"></div>
+                  <p class="text-sm text-slate-500 font-medium py-2">Saisissez vos paramètres d'accès pour continuer.</p>
+                </div>
+
+                <div class="space-y-6 text-left">
+                  <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Nom d'utilisateur</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <div id="login-user-fill" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 text-slate-900 font-bold rounded-2xl text-sm min-h-[56px] flex items-center"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between items-center mb-2 ml-1">
+                      <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mot de passe</label>
+                      <span class="text-[10px] font-black uppercase tracking-widest text-indigo-600">Oublié ?</span>
+                    </div>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      </div>
+                      <div class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 text-slate-300 font-bold rounded-2xl text-sm min-h-[56px] flex items-center">••••••••</div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center">
+                    <div class="w-5 h-5 rounded-lg border-2 border-slate-200 mr-3"></div>
+                    <span class="text-sm font-bold text-slate-600">Se souvenir de moi</span>
+                  </div>
+
+                  <button id="login-btn-ui" class="w-full flex justify-center items-center gap-3 py-4 bg-slate-900 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-xl mt-4">
+                    Accéder à l'espace
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  </button>
+                </div>
+
+                <div class="mt-10 pt-8 border-t border-slate-100 flex items-center justify-center gap-6">
+                  <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Accès Sécurisé</span>
+                  <div class="w-1 h-1 rounded-full bg-slate-200"></div>
+                  <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Support Interne</span>
+                </div>
+              </div>
+              <div class="text-center mt-8">
+                <p class="text-sm text-slate-400">© 2026 Planifié. Tous droits réservés.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- EMPLOYEE DASHBOARD (COMPLETE) -->
+      <div id="employee-space" class="absolute inset-0 opacity-0 pointer-events-none transition-opacity duration-500 flex bg-white z-50">
+        <div class="w-60 bg-stone-50 border-r border-stone-200 flex flex-col shrink-0 h-full relative overflow-hidden transition-all duration-300">
+            <div class="absolute inset-0 opacity-[0.1] pointer-events-none grid-pattern"></div>
+            <div class="h-16 flex items-center px-4 relative z-20"><div class="flex items-center gap-3 py-2"><div class="w-12 h-12 rounded-2xl shadow-2xl bg-slate-950/80 border border-slate-200 flex items-center justify-center shrink-0"><img src="../logo.png" class="w-8 h-8 object-contain"></div><span class="text-xl font-bold tracking-tight text-slate-900">Planifié</span></div></div>
+            <div class="p-3 border-b border-slate-100 flex items-center gap-3"><div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-indigo-600 shadow-sm shrink-0 text-sm">K</div><div class="overflow-hidden"><p class="text-xs font-semibold text-slate-900 truncate">Karim Bensalem</p><p class="text-[9px] font-bold text-indigo-600 uppercase tracking-widest">Employé</p></div></div>
+            
+            <div class="flex-1 py-4 px-3 overflow-y-auto custom-scroll">
+                <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-3">Menu Principal</div>
+                <nav class="space-y-1">
+                    <div id="side-planning" class="nav-item active flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100/50 relative"><div class="indicator absolute left-0 w-1 h-4 bg-indigo-600 rounded-r-full"></div><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> <span>Mon Planning</span></div>
+                    <div id="side-dispos" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 relative"><div class="indicator absolute left-0 w-1 h-4 bg-amber-600 rounded-r-full"></div><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span>Disponibilités</span></div>
+                    <div id="side-leaves" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 relative"><div class="indicator absolute left-0 w-1 h-4 bg-emerald-600 rounded-r-full"></div><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 7h8m-8 5h8m-8 5h8M5 7h.01M5 12h.01M5 17h.01"></path></svg> <span>Mes Congés</span></div>
+                    <div id="side-permutations" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 relative"><div class="indicator absolute left-0 w-1 h-4 bg-purple-600 rounded-r-full"></div><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> <span>Permutations</span></div>
+                    <div id="side-profile" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 relative"><div class="indicator absolute left-0 w-1 h-4 bg-blue-600 rounded-r-full"></div><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> <span>Profil</span></div>
+                </nav>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="p-4 border-t border-slate-100 flex flex-col gap-2 shrink-0">
+                <div class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-1.756-.426-2.924-.426-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span class="text-sm font-medium">Paramètres</span>
+                </div>
+                <div class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer group">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span class="text-sm font-medium">Déconnexion</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex-1 flex flex-col bg-slate-50 overflow-hidden">
+            <div id="view-planning" class="flex-1 p-6 overflow-y-auto custom-scroll space-y-6 animate-in fade-in duration-500">
+                <div class="flex justify-between items-center"><div><h1 class="text-2xl font-bold text-slate-900 tracking-tight">Mon Planning</h1><p class="text-xs text-gray-500 italic mt-0.5">Bienvenue, Karim Bensalem</p></div><div class="flex items-center gap-3"><div class="flex flex-col items-end"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Matricule</span><span class="text-xs font-bold text-slate-900 leading-none">#EMP-2026</span></div><div class="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold shadow-sm text-sm">KB</div></div></div>
+                <div class="grid grid-cols-3 gap-4"><div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3"><div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div><div><p class="text-slate-400 text-[9px] font-black uppercase mb-0.5">Shifts semaine</p><p class="text-2xl font-black text-slate-900">5</p></div></div><div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3"><div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div><p class="text-slate-400 text-[9px] font-black uppercase mb-0.5">Heures prévues</p><p class="text-2xl font-black text-slate-900">40h</p></div></div><div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3"><div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A2 2 0 013 15.488V5.512a2 2 0 011.553-1.944L9 2l6 3 6-3 5.447 2.724A2 2 0 0121 8.512v9.976a2 2 0 01-1.553 1.944L15 22l-6-3z"></path></svg></div><div><p class="text-slate-400 text-[9px] font-black uppercase mb-0.5">Transport</p><p class="text-2xl font-black text-sky-600 font-bold">Navette</p></div></div></div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5"><h3 class="text-base font-bold text-slate-900">Aperçu Hebdomadaire</h3><div class="grid grid-cols-7 divide-x divide-slate-100"><div class="p-4 bg-indigo-50/20 flex flex-col gap-3"><span class="text-[10px] font-black uppercase text-indigo-600 text-center">Lun 12</span><div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm font-black mx-auto">12</div><div class="bg-white rounded-xl p-3 border border-indigo-100 shadow-sm"><div class="text-[10px] font-black text-indigo-500 uppercase mb-1 text-center">Matin</div><div class="text-[11px] font-bold text-slate-700 text-center">08:00 – 16:00</div></div></div><div class="p-4 flex flex-col gap-3 grayscale opacity-40"><span class="text-[10px] font-black uppercase text-slate-400 text-center">Mar 13</span><div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center text-sm font-black mx-auto border border-slate-100">13</div><div class="bg-white rounded-xl p-3 border border-slate-100"><div class="text-[10px] font-black text-indigo-500 uppercase mb-1 text-center">Soir</div><div class="text-[11px] font-bold text-slate-700 text-center">16:00 – 00:00</div></div></div><div class="p-4 flex flex-col gap-3 opacity-40"><span class="text-[10px] font-black uppercase text-slate-400 text-center">Mer 14</span><div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center text-sm font-black mx-auto">14</div><div class="py-5 border-2 border-dashed border-slate-100 rounded-xl text-center text-[10px] font-bold text-slate-300 uppercase">Repos</div></div><div class="p-4 flex flex-col gap-3 grayscale opacity-40"><span class="text-[10px] font-black uppercase text-slate-400 text-center">Jeu 15</span><div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center text-sm font-black mx-auto border border-slate-100">15</div><div class="bg-white rounded-xl p-3 border border-indigo-100 shadow-sm"><div class="text-[10px] font-black text-indigo-500 uppercase mb-1 text-center">Matin</div><div class="text-[11px] font-bold text-slate-700 text-center">08:00 – 16:00</div></div></div><div class="p-4 flex flex-col gap-3 grayscale opacity-40"><span class="text-[10px] font-black uppercase text-slate-400 text-center">Ven 16</span><div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center text-sm font-black mx-auto border border-slate-100">16</div><div class="bg-white rounded-xl p-3 border border-slate-100"><div class="text-[10px] font-black text-indigo-500 uppercase mb-1 text-center">Soir</div><div class="text-[11px] font-bold text-slate-700 text-center">16:00 – 00:00</div></div></div><div class="p-4 flex flex-col gap-3 opacity-40"><span class="text-[10px] font-black uppercase text-slate-400 text-center">Sam 17</span><div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center text-sm font-black mx-auto">17</div><div class="py-5 border-2 border-dashed border-slate-100 rounded-xl text-center text-[10px] font-bold text-slate-300 uppercase">Repos</div></div><div class="p-4 flex flex-col gap-3 opacity-40"><span class="text-[10px] font-black uppercase text-slate-400 text-center">Dim 18</span><div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center text-sm font-black mx-auto">18</div><div class="py-5 border-2 border-dashed border-slate-100 rounded-xl text-center text-[10px] font-bold text-slate-300 uppercase">Repos</div></div></div></div>
+            </div>
+            <!-- DISPOS (REAL DESIGN 100%) -->
+            <div id="view-dispos" class="hidden flex-1 p-6 overflow-y-auto custom-scroll space-y-5 animate-in fade-in duration-500 bg-slate-50">
+                <!-- Header Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="h-1.5 w-full bg-indigo-600"></div>
+                    <div class="p-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-100">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <div>
+                                <h1 class="text-xl font-black text-slate-900 tracking-tight">Disponibilités</h1>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <p class="text-slate-500 text-xs font-medium">Période : <span class="text-slate-900 font-bold">Semaine 20</span></p>
+                                    <span class="text-slate-300">•</span>
+                                    <p class="text-slate-500 text-xs font-medium">Du 10/05 au 16/05</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 items-end">
+                            <div class="inline-flex items-center gap-2 border rounded-lg px-3 py-1.5 text-[9px] font-black uppercase tracking-widest bg-amber-50 border-amber-200 text-amber-700">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Deadline : 08/05, 18:00
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats/Rules Cards -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3.5 flex items-start gap-3">
+                        <div class="p-1.5 bg-white rounded-lg shadow-sm mt-0.5"><svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-900 uppercase tracking-tight">Minimum Jours</p>
+                            <p class="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">Select. <span class="font-bold text-indigo-600">5 jours</span> min.</p>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 flex items-start gap-3">
+                        <div class="p-1.5 bg-white rounded-lg shadow-sm mt-0.5"><svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-900 uppercase tracking-tight">Quotas Nuits</p>
+                            <p class="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">Objectif : <span class="font-bold text-amber-600">2 nuits</span>.</p>
+                        </div>
+                    </div>
+                    <div class="bg-purple-50/50 border border-purple-100 rounded-xl p-3.5 flex items-start gap-3">
+                        <div class="p-1.5 bg-white rounded-lg shadow-sm mt-0.5"><svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-900 uppercase tracking-tight">Volume horaire</p>
+                            <p class="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">Cible : <span class="font-bold text-purple-600">40 heures</span>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div class="flex items-center gap-8">
+                        <div class="flex flex-col">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jours de travail</span>
+                            <div class="flex items-center gap-2">
+                                <div class="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width: 80%"></div></div>
+                                <span class="text-[11px] font-black text-emerald-600">4 / 5 j</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Nuits sélectionnées</span>
+                            <div class="flex items-center gap-2">
+                                <div class="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-rose-500" style="width: 50%"></div></div>
+                                <span class="text-[11px] font-black text-rose-600">1 / 2 nuits</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-100">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        Confirmer
+                    </button>
+                </div>
+
+                <!-- Availability Grid -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                                <th class="px-5 py-4 text-left shrink-0 min-w-[140px]">Options de Shift</th>
+                                <th class="px-2 py-4 border-l border-slate-100"><div class="flex flex-col items-center"><span class="mb-0.5 opacity-60">Dim</span><span class="text-base font-black text-slate-700 leading-none">10</span></div></th>
+                                <th class="px-2 py-4 border-l border-slate-100"><div class="flex flex-col items-center"><span class="mb-0.5 opacity-60">Lun</span><span class="text-base font-black text-slate-700 leading-none">11</span></div></th>
+                                <th class="px-2 py-4 border-l border-slate-100"><div class="flex flex-col items-center"><span class="mb-0.5 text-indigo-600">Mar</span><span class="text-base font-black text-indigo-600 leading-none">12</span></div></th>
+                                <th class="px-2 py-4 border-l border-slate-100"><div class="flex flex-col items-center"><span class="mb-0.5 opacity-60">Mer</span><span class="text-base font-black text-slate-700 leading-none">13</span></div></th>
+                                <th class="px-2 py-4 border-l border-slate-100"><div class="flex flex-col items-center"><span class="mb-0.5 opacity-60">Jeu</span><span class="text-base font-black text-slate-700 leading-none">14</span></div></th>
+                                <th class="px-2 py-4 border-l border-slate-100"><div class="flex flex-col items-center"><span class="mb-0.5 opacity-60">Ven</span><span class="text-base font-black text-slate-700 leading-none">15</span></div></th>
+                                <th class="px-2 py-4 border-l border-slate-100"><div class="flex flex-col items-center"><span class="mb-0.5 opacity-60">Sam</span><span class="text-base font-black text-slate-700 leading-none">16</span></div></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- Matin -->
+                            <tr>
+                                <td class="px-5 py-3 bg-slate-50/30">
+                                    <div class="flex flex-col">
+                                        <div class="flex items-center gap-2 mb-0.5"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div><span class="font-bold text-slate-700 text-xs">Matin</span></div>
+                                        <div class="text-[8px] font-black text-slate-400 uppercase flex items-center gap-1">08:00 – 16:00</div>
+                                    </div>
+                                </td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-indigo-600 bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-100"><svg class="w-4 h-4 stroke-[4px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                            </tr>
+                            <!-- Soir -->
+                            <tr>
+                                <td class="px-5 py-3 bg-slate-50/30">
+                                    <div class="flex flex-col">
+                                        <div class="flex items-center gap-2 mb-0.5"><div class="w-1.5 h-1.5 rounded-full bg-orange-500"></div><span class="font-bold text-slate-700 text-xs">Soir</span></div>
+                                        <div class="text-[8px] font-black text-slate-400 uppercase flex items-center gap-1">16:00 – 00:00</div>
+                                    </div>
+                                </td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-indigo-600 bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-100"><svg class="w-4 h-4 stroke-[4px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                            </tr>
+                            <!-- Nuit -->
+                            <tr>
+                                <td class="px-5 py-3 bg-slate-50/30">
+                                    <div class="flex flex-col">
+                                        <div class="flex items-center gap-2 mb-0.5"><div class="w-1.5 h-1.5 rounded-full bg-slate-900"></div><span class="font-bold text-slate-700 text-xs">Nuit</span></div>
+                                        <div class="text-[8px] font-black text-slate-400 uppercase flex items-center gap-1">00:00 – 08:00</div>
+                                    </div>
+                                </td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-indigo-600 bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-100"><svg class="w-4 h-4 stroke-[4px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                                <td class="px-2 py-3 border-l border-slate-100"><div class="w-8 h-8 mx-auto rounded-lg border-2 border-slate-100 bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- CONGES (REAL DESIGN) -->
+            <div id="view-leaves" class="hidden flex-1 p-6 overflow-y-auto custom-scroll space-y-5 animate-in fade-in duration-500">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600"></div>
+                    <div class="p-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-200">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7h8m-8 5h8m-8 5h8M5 7h.01M5 12h.01M5 17h.01"></path></svg>
+                            </div>
+                            <div>
+                                <h1 class="text-lg font-extrabold text-slate-900 tracking-tight">Mes Congés & Absences</h1>
+                                <p class="text-[10px] text-slate-400 font-medium">Gérez vos demandes et consultez l'historique.</p>
+                            </div>
+                        </div>
+                        <button class="bg-emerald-600 text-white px-5 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-100 transition-all hover:scale-105">+ Nouvelle Demande</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                        <div><p class="text-slate-400 text-[8px] font-black uppercase tracking-widest">Solde annuel</p><p class="text-lg font-black text-slate-900">22 Jours</p></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                        <div><p class="text-slate-400 text-[8px] font-black uppercase tracking-widest">En attente</p><p class="text-lg font-black text-slate-900">1 Demande</p></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
+                        <div><p class="text-slate-400 text-[8px] font-black uppercase tracking-widest">Utilisés</p><p class="text-lg font-black text-slate-900">4 Jours</p></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-50 flex items-center justify-between">
+                        <h3 class="font-bold text-slate-900 text-xs">Historique des demandes</h3>
+                        <span class="text-[8px] font-black text-indigo-600 uppercase tracking-widest cursor-pointer">Actualiser</span>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-slate-100 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                            <tr><th class="px-5 py-3">Période</th><th class="px-5 py-3">Motif</th><th class="px-5 py-3 text-center">Statut</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <tr class="text-[11px] font-bold text-slate-700">
+                                <td class="px-5 py-4">14 Mai – 15 Mai</td>
+                                <td class="px-5 py-4"><span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-lg border border-amber-100 text-[10px]">Personnel</span></td>
+                                <td class="px-5 py-4 text-center"><span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[8px] font-black uppercase tracking-widest">En attente</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PERMUTATIONS -->
+            <div id="view-permutations" class="hidden flex-1 p-6 overflow-y-auto custom-scroll space-y-5 animate-in fade-in duration-500 bg-slate-50">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="h-1.5 w-full bg-purple-600"></div>
+                    <div class="p-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-200">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </div>
+                            <div>
+                                <h1 class="text-lg font-extrabold text-slate-900 tracking-tight">Permutations de Shifts</h1>
+                                <p class="text-[10px] text-slate-400 font-medium">Échangez vos shifts avec vos collègues en toute sécurité.</p>
+                            </div>
+                        </div>
+                        <button class="bg-purple-600 text-white px-5 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-purple-100 transition-all hover:scale-105">Demander un échange</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                        <h3 class="font-bold text-slate-900 text-xs">Échanges disponibles dans votre équipe</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-purple-200 transition-colors bg-white">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-[10px]">SM</div>
+                                <div>
+                                    <p class="text-[11px] font-bold text-slate-900">Sami Mansouri</p>
+                                    <p class="text-[9px] text-slate-500">Propose : <span class="text-purple-600 font-bold">Matin (15/05)</span></p>
+                                </div>
+                            </div>
+                            <button class="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all">Accepter</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFIL -->
+            <div id="view-profile" class="hidden flex-1 p-6 overflow-y-auto custom-scroll space-y-5 animate-in fade-in duration-500 bg-slate-50">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="h-1.5 w-full bg-blue-600"></div>
+                    <div class="p-8 flex flex-col items-center text-center">
+                        <div class="w-24 h-24 rounded-full bg-blue-50 border-4 border-white shadow-xl flex items-center justify-center text-3xl font-black text-blue-600 mb-4">KB</div>
+                        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Karim Bensalem</h1>
+                        <p class="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-6">Employé de Production • Matricule #7742</p>
+                        <div class="grid grid-cols-2 gap-4 w-full max-w-md">
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left">
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Email</p>
+                                <p class="text-xs font-bold text-slate-700">k.bensalem@entreprise.dz</p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left">
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Téléphone</p>
+                                <p class="text-xs font-bold text-slate-700">0550 12 34 56</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <audio id="v2" src="../audio/scene2.mp3" preload="auto"></audio>
+  <script>
+    const cursor = document.getElementById('cursor'); const ring = document.getElementById('click-ring'); const v2 = document.getElementById('v2');
+    function moveCursor(x, y, callback) { cursor.style.left = x + 'px'; cursor.style.top = y + 'px'; if (callback) setTimeout(callback, 800); }
+    function clickAt(x, y, callback) { ring.style.left = (x - 20) + 'px'; ring.style.top = (y - 20) + 'px'; ring.classList.add('click-anim'); setTimeout(() => { ring.classList.remove('click-anim'); if (callback) callback(); }, 400); }
+    function typeText(targetId, text, speed, callback) { const el = document.getElementById(targetId); el.classList.add('typing-cursor'); let i = 0; const timer = setInterval(() => { el.innerText += text[i]; i++; if (i >= text.length) { clearInterval(timer); el.classList.remove('typing-cursor'); if (callback) callback(); } }, speed); }
+    function switchView(targetId) {
+        document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+        document.getElementById(targetId).classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.classList.remove('active', 'bg-indigo-50', 'bg-amber-50', 'bg-emerald-50', 'bg-purple-50', 'bg-blue-50', 'text-indigo-600', 'text-amber-600', 'text-emerald-600', 'text-purple-600', 'text-blue-600', 'border-indigo-100', 'border-amber-100', 'border-emerald-100', 'border-purple-100', 'border-blue-100', 'shadow-sm');
+            el.classList.add('text-slate-500');
+            el.querySelector('.indicator').classList.add('hidden');
+        });
+
+        const type = targetId.split('-')[1];
+        const sideId = 'side-' + type;
+        const activeItem = document.getElementById(sideId);
+        
+        const colorMap = { 'planning': 'indigo', 'dispos': 'amber', 'leaves': 'emerald', 'permutations': 'purple', 'profile': 'blue' };
+        const color = colorMap[type] || 'slate';
+        
+        activeItem.classList.add('active', `bg-${color}-50`, `text-${color}-600`, 'border', `border-${color}-100`, 'shadow-sm');
+        activeItem.classList.remove('text-slate-500');
+        activeItem.querySelector('.indicator').classList.remove('hidden');
+        
+        const urlMap = { 'view-planning': 'planifie.dz/employee/planning', 'view-dispos': 'planifie.dz/employee/availability', 'view-leaves': 'planifie.dz/employee/leaves', 'view-permutations': 'planifie.dz/employee/swaps', 'view-profile': 'planifie.dz/employee/profile' };
+        document.getElementById('browser-url').innerText = urlMap[targetId] || 'planifie.dz/employee';
+    }
+    let isStarted = false;
+    function startScenario() {
+      if (isStarted) return;
+      isStarted = true;
+      const urlParams = new URLSearchParams(window.location.search); let audioEnded = false; let tourFinished = false;
+      const checkEnd = () => { if (audioEnded && tourFinished) { setTimeout(() => { if (window.self !== window.top) window.parent.postMessage('scene-ended', '*'); }, 500); } };
+      if ((urlParams.get('autoplay') === 'true' || urlParams.get('start') === 'true') && v2) { v2.play().catch(e => console.log("Audio blocked")); v2.onended = () => { audioEnded = true; checkEnd(); }; } else { audioEnded = true; }
+      setTimeout(() => {
+        typeText('search-text', 'planifie', 80, () => {
+          setTimeout(() => {
+            document.getElementById('google-view').style.opacity = '0'; document.getElementById('results-view').style.opacity = '1'; document.getElementById('browser-url').innerText = 'google.com/search?q=planifie';
+            setTimeout(() => {
+              const resRect = document.getElementById('main-result').getBoundingClientRect();
+              moveCursor(resRect.left + 200, resRect.top + 40, () => {
+                clickAt(resRect.left + 200, resRect.top + 40, () => {
+                  document.getElementById('results-view').style.opacity = '0'; document.getElementById('login-view').classList.remove('pointer-events-none'); document.getElementById('login-view').style.opacity = '1'; document.getElementById('login-view').style.transform = 'scale(1)'; document.getElementById('browser-url').innerText = 'planifie.dz/login';
+                  setTimeout(() => {
+                    typeText('login-user-fill', 'karim.bensalem', 60, () => {
+                      const btnRect = document.getElementById('login-btn-ui').getBoundingClientRect();
+                      moveCursor(btnRect.left + 200, btnRect.top + 30, () => {
+                        clickAt(btnRect.left + 200, btnRect.top + 30, () => {
+                          document.getElementById('login-view').style.opacity = '0'; document.getElementById('employee-space').style.opacity = '1'; 
+                          document.getElementById('browser-url').innerText = 'planifie.dz/employee/planning';
+                          setTimeout(() => {
+                            const sideDispo = document.getElementById('side-dispos').getBoundingClientRect();
+                            moveCursor(sideDispo.left + 100, sideDispo.top + 20, () => {
+                              clickAt(sideDispo.left + 100, sideDispo.top + 20, () => {
+                                  switchView('view-dispos');
+                                  setTimeout(() => {
+                                    const sidePlanning = document.getElementById('side-planning').getBoundingClientRect();
+                                    moveCursor(sidePlanning.left + 100, sidePlanning.top + 20, () => {
+                                        clickAt(sidePlanning.left + 100, sidePlanning.top + 20, () => {
+                                            switchView('view-planning');
+                                            setTimeout(() => {
+                                                const sidePermutations = document.getElementById('side-permutations').getBoundingClientRect();
+                                                moveCursor(sidePermutations.left + 100, sidePermutations.top + 20, () => {
+                                                    clickAt(sidePermutations.left + 100, sidePermutations.top + 20, () => {
+                                                        switchView('view-permutations');
+                                                        setTimeout(() => {
+                                                            const sideLeaves = document.getElementById('side-leaves').getBoundingClientRect();
+                                                            moveCursor(sideLeaves.left + 100, sideLeaves.top + 20, () => {
+                                                                clickAt(sideLeaves.left + 100, sideLeaves.top + 20, () => {
+                                                                    switchView('view-leaves');
+                                                                    tourFinished = true; checkEnd();
+                                                                });
+                                                            });
+                                                        }, 2000);
+                                                    });
+                                                });
+                                            }, 2000);
+                                        });
+                                    });
+                                  }, 2000);
+                              });
+                            });
+                          }, 1500);
+                        });
+                      });
+                    });
+                  }, 1200);
+                });
+              });
+            }, 800);
+          }, 800);
+        });
+      }, 500);
+    }
+    
+    window.onload = () => {
+       const urlParams = new URLSearchParams(window.location.search);
+       if (urlParams.get('autoplay') === 'true') {
+           startScenario();
+       }
+    };
+
+    window.addEventListener('message', (e) => {
+      if (e.data === 'play-audio') {
+        startScenario();
+      }
+    });
+
+    document.body.onclick = () => startScenario();
+  </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --djezzy-red: #E30613;
+  --djezzy-dark-red: #C10510;
+  --djezzy-light-red: #FF4D57;
+  --djezzy-bg: #FDF2F2;
+  --djezzy-text: #333333;
+  --djezzy-gray: #666666;
+  --djezzy-light-gray: #F5F5F5;
+  --djezzy-border: #E5E5E5;
+  
+  --bg-main: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --border-main: #E2E8F0;
+}
+
+.dark {
+  --bg-main: #020617;
+  --bg-card: #0F172A;
+  --text-main: #F8FAFC;
+  --text-muted: #94A3B8;
+  --border-main: #1E293B;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-main);
+  line-height: 1.6;
+  background-color: var(--bg-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ... (gardez tout le reste de votre CSS) ... */
+
+/* Animation de chargement */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scrollbar moderne */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5f5 transparent;
+}
+
+/* Global Fix for Text Selection Cursor on Interactive Elements */
+a, 
+button, 
+[role="button"],
+.cursor-pointer {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Ensure children of interactive elements also show the pointer and aren't selectable */
+a *, 
+button *, 
+[role="button"] *,
+.cursor-pointer * {
+  cursor: inherit;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow selection only in specific content areas if needed */
+p, h1, h2, h3, h4, h5, h6, li, span:not(a span, button span, [role="button"] span, .cursor-pointer span) {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #cbd5f5;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #818cf8;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0px;
+}

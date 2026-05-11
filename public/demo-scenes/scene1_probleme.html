@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: 'Outfit', sans-serif;
+      color: white;
+      overflow: hidden;
+    }
+
+    .chaos-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      perspective: 1000px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ===== EXCEL TITLE BAR ===== */
+    .excel-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: clamp(40px, 5vh, 60px);
+      background: #1d6f42;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 15px;
+      z-index: 50;
+    }
+
+    .excel-icon {
+      width: clamp(18px, 3vw, 22px); 
+      height: clamp(18px, 3vw, 22px);
+      background: white;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: clamp(10px, 1.5vw, 13px);
+      color: #1d6f42;
+      flex-shrink: 0;
+    }
+
+    .excel-filename {
+      font-size: clamp(10px, 1.5vw, 13px);
+      color: rgba(255,255,255,0.9);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .excel-controls {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+    }
+
+    .excel-ctrl {
+      width: clamp(8px, 1.5vw, 12px); 
+      height: clamp(8px, 1.5vw, 12px);
+      border-radius: 50%;
+    }
+    .c-red   { background: #ef4444; }
+    .c-yellow { background: #f59e0b; }
+    .c-green  { background: #22c55e; }
+
+    .chaos-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      border: 3px solid #b91c1c;
+      padding: clamp(60px, 8vw, 100px) clamp(10px, 3vw, 40px) 20px; 
+      box-shadow: 0 0 100px rgba(220, 38, 38, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(8px, 1.5vh, 16px);
+      animation: extremeShake 0.2s infinite alternate;
+      overflow: hidden;
+      transition: all 0.5s ease;
+    }
+
+    /* ETAT STOP : Ombre rouge massive */
+    .chaos-container.stopped {
+      animation: none;
+      box-shadow: 0 0 200px rgba(239, 68, 68, 0.8);
+      border-color: #ef4444;
+      transform: scale(0.98);
+      filter: brightness(0.4);
+    }
+
+    @keyframes extremeShake {
+      0% { transform: rotateX(2deg) rotateY(-1deg) translate(2px, 2px); }
+      100% { transform: rotateX(-2deg) rotateY(1deg) translate(-2px, -2px); }
+    }
+
+    .grid-header {
+      display: grid;
+      grid-template-columns: clamp(180px, 25%, 400px) repeat(7, 1fr);
+      gap: 12px;
+      border-bottom: 2px solid rgba(239, 68, 68, 0.3);
+      padding-bottom: 20px;
+      font-size: clamp(12px, 1.5vw, 18px);
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #ef4444;
+      width: 100%;
+    }
+
+    .employee-row {
+      display: grid;
+      grid-template-columns: clamp(180px, 25%, 400px) repeat(7, 1fr);
+      gap: 12px;
+      height: clamp(55px, 8vh, 85px);
+      opacity: 0.8;
+      width: 100%;
+    }
+
+    .name {
+      display: flex;
+      align-items: center;
+      font-weight: 700;
+      font-size: clamp(10px, 1.4vw, 15px);
+      color: #cbd5e1;
+    }
+
+    .cell {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .shift {
+      width: 95%; height: 85%;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: clamp(8px, 1.1vw, 11px); color: white;
+    }
+    .matin { background: #3b82f6; }
+    .soir { background: #f59e0b; }
+    .nuit { background: #1e3a8a; }
+    .absent { background: #ef4444; position: relative; }
+    .absent::after { content: '✖'; position: absolute; font-size: 14px; }
+
+    .conflict {
+      border: 2px solid #ff0000;
+      background: rgba(255, 0, 0, 0.2);
+      animation: blink 0.3s infinite;
+      z-index: 5;
+    }
+
+    @keyframes blink {
+      0%, 100% { box-shadow: 0 0 0px #ff0000; }
+      50% { box-shadow: 0 0 20px #ff0000; background: rgba(255, 0, 0, 0.4); }
+    }
+
+    .warning-label {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff0000;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 8px;
+      font-weight: 900;
+      white-space: nowrap;
+      z-index: 20;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Chat Bubbles */
+    .bubble {
+      position: absolute;
+      background: white;
+      color: #1e293b;
+      padding: clamp(12px, 2vw, 25px) clamp(20px, 3vw, 40px);
+      border-radius: 30px;
+      font-size: clamp(14px, 2vw, 24px);
+      font-weight: 700;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+      z-index: 150;
+      max-width: clamp(250px, 40vw, 450px);
+      opacity: 0;
+      animation: bubblePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes bubblePop {
+      from { transform: scale(0) translateY(20px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .manager-overlay {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      z-index: 200;
+    }
+    
+    .manager-overlay img {
+      width: clamp(200px, 25vw, 350px) !important;
+      height: clamp(200px, 25vw, 350px) !important;
+    }
+
+    .stress-bar {
+      width: clamp(250px, 35vw, 450px); height: clamp(20px, 4vh, 40px);
+      background: #1e293b;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 3px solid #ef4444;
+    }
+
+    .stress-fill {
+      width: 0%; height: 100%;
+      background: linear-gradient(90deg, #f59e0b, #ef4444);
+      animation: fillStress 5s forwards;
+    }
+
+    @keyframes fillStress { to { width: 100%; } }
+
+    .alert-fullscreen {
+      position: absolute;
+      inset: 0;
+      background: rgba(239, 68, 68, 0.2);
+      pointer-events: none;
+      z-index: 300;
+      animation: flashScreen 0.5s infinite;
+      display: none;
+    }
+
+    @keyframes flashScreen {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    .big-text {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.5) rotate(-5deg);
+      font-size: clamp(30px, 8vw, 70px);
+      font-weight: 950;
+      color: white;
+      background: #ef4444;
+      padding: 12px clamp(30px, 6vw, 60px);
+      border-radius: 12px;
+      z-index: 2000;
+      text-transform: uppercase;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.8), 0 0 40px rgba(239,68,68,0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      white-space: nowrap;
+    }
+
+    .big-text.active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1) rotate(-5deg);
+    }
+
+    /* Transition In from Scene 0 */
+    .chaos-wrapper.transition-in {
+      animation: landFromRed 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    @keyframes landFromRed {
+      0% { transform: scale(1.5); filter: brightness(0.5) sepia(1) hue-rotate(-50deg); background: #ef4444; }
+      100% { transform: scale(1); filter: brightness(1) sepia(0) hue-rotate(0deg); background: #020617; }
+    }
+
+    /* Bridge Text */
+    .bridge-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      text-align: center;
+      font-size: clamp(32px, 8vw, 85px);
+      font-weight: 950;
+      color: white;
+      z-index: 500;
+      opacity: 0;
+      text-shadow: 0 0 50px rgba(0,0,0,1), 0 0 30px rgba(99,102,241,0.6);
+      pointer-events: none;
+      transition: all 0.8s ease;
+    }
+
+    .bridge-active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    /* BODY EFFECT ON STOP */
+    body.scene-stopped {
+      background: #0f0202;
+      transition: background 0.8s ease;
+    }
+    body.scene-stopped::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      box-shadow: inset 0 0 300px rgba(239, 68, 68, 0.5);
+      z-index: 1000;
+      pointer-events: none;
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.7; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="chaos-wrapper transition-in">
+    <div class="alert-fullscreen" id="flasher"></div>
+    <div class="big-text" id="stop-text">STOP !</div>
+    <div class="bridge-text" id="bridge">Et si tout cela pouvait être résolu en quelques secondes ?</div>
+
+    <div class="chaos-container" id="chaos-box">
+      <!-- Excel Title Bar -->
+      <div class="excel-bar">
+        <div class="excel-icon">X</div>
+        <div class="excel-filename">planning_S18.xlsx — Microsoft Excel</div>
+        <div class="excel-controls">
+          <div class="excel-ctrl c-red"></div>
+          <div class="excel-ctrl c-yellow"></div>
+          <div class="excel-ctrl c-green"></div>
+        </div>
+      </div>
+
+      <div class="grid-header">
+        <div>NOM EMPLOYÉ</div><div>LUN</div><div>MAR</div><div>MER</div><div>JEU</div><div>VEN</div><div>SAM</div><div>DIM</div>
+      </div>
+
+      <div class="employee-row">
+        <div class="name">Karim Bensalem</div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift nuit conflict">NUIT<span class="warning-label">CONFLIT REPOS</span></div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift absent"></div></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="employee-row">
+        <div class="name">Amira Djoudi</div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"><div class="shift absent"></div></div><div class="cell"><div class="shift absent conflict"><span class="warning-label">SOUS-EFFECTIF</span></div></div><div class="cell"><div class="shift absent"></div></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="employee-row">
+        <div class="name">Yacine Hamidi</div><div class="cell"><div class="shift nuit">NUIT</div></div><div class="cell"><div class="shift nuit">NUIT</div></div><div class="cell"><div class="shift nuit conflict">NUIT<span class="warning-label">MAX NUITS</span></div></div><div class="cell"></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="employee-row">
+        <div class="name">Rania Mebarki</div><div class="cell"></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin conflict"><span class="warning-label">HEURES SUPP++</span></div></div><div class="cell"></div>
+      </div>
+      <div class="employee-row">
+        <div class="name">Sofiane Khelil</div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"></div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"><div class="shift soir conflict"><span class="warning-label">ERREUR BUS</span></div></div><div class="cell"></div>
+      </div>
+      <div class="employee-row">
+        <div class="name">Meriem Touati</div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift absent"></div></div><div class="cell"><div class="shift absent"></div></div><div class="cell"></div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"></div>
+      </div>
+      <div class="employee-row">
+        <div class="name">Omar Belkacem</div><div class="cell"><div class="shift nuit">NUIT</div></div><div class="cell"></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="employee-row">
+        <div class="name">Linda Haddad</div><div class="cell"></div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"><div class="shift soir">SOIR</div></div><div class="cell"><div class="shift absent"></div></div><div class="cell"><div class="shift absent"></div></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="employee-row">
+        <div class="name">Samir Mansouri</div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"><div class="shift matin">MATIN</div></div><div class="cell"></div><div class="cell"></div><div class="cell"><div class="shift nuit">NUIT</div></div><div class="cell"></div>
+      </div>
+    </div>
+
+    <!-- Floating Messages (The Drama) -->
+    <div class="bubble" style="top: 10%; left: 5%; animation-delay: 0.5s;">📱 Karim: "Je suis malade, je ne viens pas !"</div>
+    <div class="bubble" style="top: 25%; right: 20%; animation-delay: 1.2s;">🎓 Sofiane: "J'ai cours mardi à 8h, je ne peux pas venir !"</div>
+    <div class="bubble" style="top: 45%; right: 5%; animation-delay: 2s;">💬 Linda: "Possible de changer avec Yacine ?"</div>
+    <div class="bubble" style="bottom: 30%; left: 5%; animation-delay: 2.8s;">☎️ Ahmed: "Le prestataire dit que je suis pas programmé sur ma ligne !"</div>
+    <div class="bubble" style="top: 10%; right: 5%; animation-delay: 3.5s;">🚨 Agent: "Il manque 3 techniciens pour le shift de Nuit !"</div>
+    <div class="bubble" style="top: 75%; left: 30%; animation-delay: 4.2s;">⚠️ RH: "Attention au code du travail !"</div>
+
+  </div>
+
+  <audio id="v1-1" src="../audio/scene1.mp3" preload="auto"></audio>
+  <audio id="v1-2" src="../audio/scene1-2.mp3" preload="auto"></audio>
+  <audio id="v1-3" src="../audio/scene1-3.mp3" preload="auto"></audio>
+
+  <div class="manager-overlay">
+    <img src="../stressed-manager.png" alt="Stressed Manager" style="width: 180px; height: 180px; object-fit: cover; border-radius: 20px; border: 3px solid #ef4444; filter: grayscale(0.5) contrast(1.2);">
+    <div style="font-weight: 900; color: #ef4444; letter-spacing: 2px;">MANAGER STRESS LEVEL</div>
+    <div class="stress-bar"><div class="stress-fill"></div></div>
+  </div>
+
+  <script>
+    const v11 = document.getElementById('v1-1');
+    const v12 = document.getElementById('v1-2');
+    const v13 = document.getElementById('v1-3');
+    const chaosBox = document.getElementById('chaos-box');
+    const stopText = document.getElementById('stop-text');
+    const flasher = document.getElementById('flasher');
+
+    let isStarted = false;
+    function startDemo() {
+      if (isStarted) return;
+      isStarted = true;
+      v11.play().catch(e => console.log("v1-1 blocked", e));
+
+      v11.onended = () => {
+        // IMPACT VISUEL : STOP + OMBRE ROUGE + FLASH + GLOW TOTAL
+        document.body.classList.add('scene-stopped');
+        chaosBox.classList.add('stopped');
+        stopText.classList.add('active');
+        flasher.style.display = 'block';
+
+        // Lancer l'audio scene1-2 (Impact/Transition)
+        v12.play().catch(e => console.log("v1-2 blocked", e));
+        
+        // Arrêter le flash après un court instant
+        setTimeout(() => { flasher.style.display = 'none'; }, 800);
+      };
+
+      // QUAND LA VOIX 1-2 SE TERMINE -> ON LANCE LE BRIDGE ET LA VOIX 1-3
+      v12.onended = () => {
+        stopText.classList.remove('active');
+        stopText.style.display = 'none';
+        
+        // Afficher le texte du bridge ET lancer la voix 1-3 simultanément
+        document.getElementById('bridge').classList.add('bridge-active');
+        v13.play().catch(e => console.log("v1-3 blocked", e));
+      };
+
+      function triggerNextScene() {
+        if (window.self !== window.top || new URLSearchParams(window.location.search).get('tour')) {
+          window.parent.postMessage('scene-ended', '*');
+        } else {
+          window.location.href = 'scene2_logo.html?autoplay=true';
+        }
+      }
+
+      v13.onended = () => {
+        triggerNextScene();
+      };
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('autoplay')) {
+      startDemo();
+    }
+    
+    // Explicit trigger from parent (bypass mobile block)
+    window.addEventListener('message', (e) => {
+      if (e.data === 'play-audio') {
+         startDemo();
+      }
+    });
+
+    // Fallback tap to start
+    document.body.onclick = () => startDemo();
+  </script>
+</body>
+</html>

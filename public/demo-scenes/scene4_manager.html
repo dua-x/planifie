@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #020617; height: 100vh; font-family: 'Outfit', sans-serif; overflow: hidden; }
+    .browser-window { width: 100%; height: 100%; background: #f1f5f9; overflow: hidden; display: flex; flex-direction: column; position: absolute; inset: 0; }
+    .browser-header { height: 40px; background: #e2e8f0; display: flex; align-items: center; padding: 0 12px; gap: 10px; border-bottom: 1px solid #cbd5e1; flex-shrink: 0; z-index: 100; }
+    .dots { display: flex; gap: 5px; } .dot { width: 10px; height: 10px; border-radius: 50%; } .dot.red { background: #ff5f57; } .dot.yellow { background: #ffbd2e; } .dot.green { background: #28c940; }
+    .address-bar { flex: 1; height: 24px; background: white; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 11px; color: #64748b; }
+    .browser-content { flex: 1; position: relative; background: white; overflow: hidden; display: flex; }
+    .grid-pattern { background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 27px 27px; }
+    .fake-cursor { position: absolute; width: 24px; height: 24px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>') no-repeat; z-index: 9999; pointer-events: none; top: 100px; left: 100px; transition: all 1s cubic-bezier(0.4, 0, 0.2, 1); }
+    .click-ring { position: absolute; width: 40px; height: 40px; border: 3px solid #4f46e5; border-radius: 50%; transform: scale(0); opacity: 0; z-index: 9998; pointer-events: none; }
+    .click-anim { animation: clickPulse 0.4s ease-out forwards; }
+    @keyframes clickPulse { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; } .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    
+    .nav-btn { display: flex; align-items: center; width: 100%; gap: 12px; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; color: #64748b; transition: all 0.3s; position: relative; }
+    .nav-btn:hover { color: #0f172a; background: rgba(0,0,0,0.03); }
+    .active-indigo { background: #f3f0ff; color: #4f46e5; font-weight: 700; }
+    .indicator { position: absolute; left: 0; width: 4px; height: 20px; background: #4f46e5; border-radius: 0 4px 4px 0; box-shadow: 0 0 8px rgba(79, 70, 229, 0.4); display: none; }
+    .nav-btn.active .indicator { display: block; }
+    
+    .tab-btn { display: flex; align-items: center; gap: 8px; padding: 8px 20px; border-radius: 10px; font-size: 12px; font-weight: 600; color: #64748b; transition: all 0.2s; white-space: nowrap; cursor: pointer; border: 1px solid transparent; }
+    .tab-btn.active { background: white; color: #7c3aed; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; font-weight: 700; }
+    
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+
+    .shift-badge { padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px; }
+    .shift-matin { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .shift-soir { background: #f5f3ff; color: #4c1d95; border: 1px solid #ddd6fe; }
+    .shift-off { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; opacity: 0.6; }
+    .shift-tt { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+  </style>
+</head>
+<body class="bg-slate-950">
+  <div class="fake-cursor" id="cursor"></div>
+  <div class="click-ring" id="click-ring"></div>
+  <div class="browser-window">
+    <div class="browser-header">
+      <div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+      <div class="address-bar" id="browser-url">planifie.dz/supervisor/generate</div>
+    </div>
+    <div class="browser-content flex" id="viewport">
+      <!-- SIDEBAR -->
+      <div class="w-[240px] bg-stone-50 border-r border-stone-200 flex flex-col h-screen relative shrink-0">
+        <div class="absolute inset-0 opacity-[0.1] pointer-events-none bg-[linear-gradient(#000_1px,transparent_1px),linear-gradient(90deg,#000_1px,transparent_1px)] bg-[size:27px_27px]"></div>
+        <div class="h-20 flex items-center justify-between px-4 relative z-20 shadow-[0_10px_20px_rgba(0,0,0,0.05)] bg-white/50 backdrop-blur-sm">
+          <div class="flex items-center gap-3 overflow-hidden">
+            <div class="w-14 h-14 rounded-2xl bg-slate-950/80 flex items-center justify-center overflow-hidden"><img src="../logo.png" alt="Logo" class="w-10 h-10"></div>
+            <span class="text-2xl font-bold text-slate-900 tracking-tight">Planifié</span>
+          </div>
+        </div>
+        <div class="p-4 py-6 border-b border-slate-100 flex items-center gap-3 relative bg-white/30"><div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 font-bold flex items-center justify-center text-indigo-600 shadow-sm shrink-0">AM</div><div class="overflow-hidden flex flex-col justify-center"><p class="text-sm font-semibold text-slate-900 truncate">Ahmed Mansouri</p><p class="text-[10px] font-black uppercase text-indigo-600 mt-0.5 tracking-widest leading-none">Superviseur</p></div></div>
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          <div class="nav-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg> <span>Dashboard</span></div>
+          <div class="nav-btn active active-indigo"><div class="indicator"></div><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> <span>Générer Planning</span></div>
+          <div class="nav-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg> <span>Employés</span></div>
+          <div class="nav-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span>Congés</span></div>
+          <div class="nav-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> <span>Plannings</span></div>
+          <div class="nav-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg> <span>Statistiques</span></div>
+        </nav>
+        <div class="p-4 border-t border-slate-100 flex flex-col gap-2 relative bg-white/30">
+          <div class="nav-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.756 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.756 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.756 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.756 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.756 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.756 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.756 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span>Paramètres</span></div>
+          <div class="nav-btn text-rose-500 hover:bg-rose-50 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg> <span>Déconnexion</span></div>
+        </div>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <div class="flex-1 flex flex-col bg-slate-50 min-w-0 relative">
+          <!-- HEADER -->
+          <div class="bg-white border-b border-slate-200 shrink-0">
+              <div class="h-1.5 w-full bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-700 shadow-sm"></div>
+              <div class="p-8 pb-4">
+                  <div class="flex items-center justify-between mb-6">
+                      <div class="flex items-center gap-5">
+                          <div class="w-14 h-14 rounded-2xl bg-purple-600 flex items-center justify-center text-white shadow-xl border border-purple-400/20 transition-all"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div>
+                          <div><h1 class="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">Génération de Planning</h1><p class="text-slate-500 font-medium italic mt-1 leading-none">Collecte & IA S18</p></div>
+                      </div>
+                      <div class="bg-purple-50 text-purple-700 border border-purple-100 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm">S18 / 2026</div>
+                  </div>
+                  <div class="flex items-center gap-1 p-1 bg-slate-100/80 rounded-2xl w-full overflow-x-auto scrollbar-none transition-colors border border-slate-200/50">
+                      <div class="tab-btn"><span>Configuration</span></div>
+                      <div class="tab-btn"><span>Shifts & Besoins</span></div>
+                      <div id="tab-btn-dispos" class="tab-btn active"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg> <span>Disponibilités</span></div>
+                      <div class="tab-btn"><span>Pré-planning</span></div>
+                      <div id="tab-btn-gen" class="tab-btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> <span>Planning Généré</span></div>
+                      <div class="tab-btn"><span>Bilan</span></div>
+                      <div id="tab-btn-edit" class="tab-btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> <span>Édition Manuelle</span></div>
+                  </div>
+              </div>
+          </div>
+
+          <div class="flex-1 overflow-y-auto custom-scroll p-8 relative">
+              <!-- 1. DISPOS VIEW (Availability Collection) -->
+              <div id="view-dispos" class="space-y-5 animate-in fade-in duration-500">
+                  <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all h-[500px] flex flex-col">
+                      <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between flex-shrink-0">
+                          <h4 class="text-sm font-bold text-slate-700 font-black uppercase tracking-tight">Récapitulatif des vœux reçus</h4>
+                          <div id="count" class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">0 / 42 agents</div>
+                      </div>
+                      <div class="overflow-y-auto flex-1 custom-scroll">
+                        <table class="w-full text-left">
+                            <thead class="sticky top-0 z-20 bg-slate-50 shadow-sm">
+                              <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                <th class="px-6 py-4 border-r w-64 bg-slate-50">Employé</th>
+                                <th class="px-4 py-4 text-center">Status</th>
+                                <th class="px-4 py-4 text-center">Lundi</th>
+                                <th class="px-4 py-4 text-center">Mardi</th>
+                                <th class="px-4 py-4 text-center">Mercredi</th>
+                              </tr>
+                            </thead>
+                            <tbody id="tbody" class="text-[12px] font-bold divide-y divide-slate-50 bg-white"></tbody>
+                        </table>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 2. GENERATE VIEW (IA Dashboard) -->
+              <div id="view-gen" class="hidden animate-in fade-in slide-in-from-right-4 duration-500 space-y-8">
+                  <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center gap-4 transition-all hover:border-purple-200">
+                      <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center font-bold">42</div>
+                      <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Agents</p><p class="text-sm font-bold text-slate-900 leading-none">Dispos S18</p></div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center gap-4 transition-all hover:border-emerald-200">
+                      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold">100%</div>
+                      <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Données</p><p class="text-sm font-bold text-slate-900 leading-none">Prêt pour IA</p></div>
+                    </div>
+                  </div>
+
+                  <div id="banner-ia" class="rounded-2xl p-8 text-white relative overflow-hidden shadow-xl transition-all" style="background: linear-gradient(135deg, #2e1065 0%, #4c1d95 50%, #5b21b6 100%)">
+                    <div class="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="relative flex flex-col md:flex-row items-center justify-between gap-8">
+                      <div class="max-w-md">
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 border border-white/20 rounded-full text-purple-200 text-[10px] font-bold uppercase tracking-wider mb-4"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> IA Optimization</div>
+                        <h3 class="text-2xl font-extrabold tracking-tight mb-2 uppercase leading-none">Génération de planning</h3>
+                        <p id="banner-text" class="text-purple-200/70 text-sm leading-relaxed">L'IA calcule l'attribution optimale des shifts en respectant 100% des contraintes.</p>
+                      </div>
+                      <button id="start-btn" class="group flex items-center gap-3 px-8 py-4 bg-white text-purple-900 rounded-xl font-extrabold text-base transition-all shadow-xl shadow-black/20 hover:scale-[1.03] active:scale-95">
+                        <span id="btn-content" class="flex items-center gap-3"><svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg> Générer le planning</span>
+                      </button>
+                    </div>
+                    <div id="progress-bar-container" class="mt-8 bg-white/10 rounded-full h-1.5 overflow-hidden hidden">
+                      <div class="bg-purple-400 h-full animate-pulse" style="width: 60%"></div>
+                    </div>
+                  </div>
+
+                  <!-- SUCCESS CARD -->
+                  <div id="success-card" class="bg-emerald-50 border border-emerald-100 rounded-2xl p-12 text-center animate-in zoom-in-95 duration-500 transition-colors shadow-sm hidden">
+                    <div class="w-20 h-20 bg-emerald-100 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-xl shadow-emerald-500/10"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M5 13l4 4L19 7"></path></svg></div>
+                    <h3 class="text-2xl font-black text-emerald-900 mb-3 tracking-tight">Génération Terminée !</h3>
+                    <p class="text-emerald-600/70 text-base mb-10 max-w-md mx-auto font-medium leading-relaxed italic">Le planning optimal a été calculé pour les 42 employés.</p>
+                    <button id="go-edit-btn" class="flex items-center gap-4 px-10 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-black transition-all shadow-xl shadow-emerald-200">
+                        Consulter le Planning <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </button>
+                  </div>
+              </div>
+
+              <!-- 3. EDITION VIEW (FULL ROSTER TABLE) -->
+              <div id="view-edition" class="hidden animate-in fade-in duration-500 space-y-6">
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px] transition-all">
+                    <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between flex-shrink-0">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
+                            <div><h3 class="text-lg font-black text-slate-900 leading-none">Consultation Planning Final</h3><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">S18 - Optimisation IA Terminée</p></div>
+                        </div>
+                        <button id="publish-btn" class="bg-slate-900 text-white px-10 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl border-b-4 border-slate-700 active:scale-95 transition-all">Publier le Planning</button>
+                    </div>
+                    
+                    <div class="overflow-y-auto flex-1 custom-scroll">
+                      <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 z-20 bg-slate-50 shadow-sm">
+                          <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                            <th class="px-6 py-4 border-r w-64 bg-slate-50">Agent</th>
+                            <th class="px-4 py-4 text-center border-r border-slate-100">LUN</th>
+                            <th class="px-4 py-4 text-center border-r border-slate-100">MAR</th>
+                            <th class="px-4 py-4 text-center border-r border-slate-100">MER</th>
+                            <th class="px-4 py-4 text-center border-r border-slate-100">JEU</th>
+                            <th class="px-4 py-4 text-center">VEN</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tbody-final" class="text-[12px] font-bold divide-y divide-slate-50 bg-white"></tbody>
+                      </table>
+                    </div>
+                </div>
+              </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="published-toast" class="fixed bottom-10 right-10 z-[3000] bg-slate-900 text-white px-8 py-5 rounded-[1.5rem] font-black uppercase text-xs tracking-widest shadow-2xl flex items-center gap-4 translate-y-20 opacity-0 transition-all duration-500">
+    <div class="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></div>
+    PLANNING S18 PUBLIÉ AVEC SUCCÈS
+  </div>
+
+  <audio id="v4" src="../audio/scene4.mp3" preload="auto"></audio>
+  <script>
+    const cursor = document.getElementById('cursor'); const ring = document.getElementById('click-ring');
+    
+    // ... employee data code remains unchanged
+
+    let isStarted = false;
+    function startDemo() {
+        if (isStarted) return;
+        isStarted = true;
+        const v4 = document.getElementById('v4');
+        let audioEnded = false; let animationFinished = false;
+        const checkEnd = () => { if (audioEnded && animationFinished) { setTimeout(() => { if (window.self !== window.top) window.parent.postMessage('scene-ended', '*'); }, 1500); } };
+        
+        if ((new URLSearchParams(window.location.search).get('autoplay') === 'true' || new URLSearchParams(window.location.search).get('start') === 'true')) {
+            v4.play().catch(e => { audioEnded = true; checkEnd(); });
+            v4.onended = () => { audioEnded = true; checkEnd(); };
+        } else { audioEnded = true; }
+
+        // ... rest of animation logic
+        // Moving the animation logic inside startDemo
+        
+        // Prep final table
+        emps.forEach(addFinalRow);
+
+        setTimeout(() => {
+            // 1. Fill Dispos (Availability)
+            emps.forEach((emp, i) => setTimeout(() => addDispoRow(emp, i), i * 200));
+            
+            setTimeout(() => {
+                // 2. Click "Planning Généré" Tab
+                const tab = document.getElementById('tab-btn-gen').getBoundingClientRect();
+                moveCursor(tab.left + 80, tab.top + 20, () => {
+                    clickAt(tab.left + 80, tab.top + 20, () => {
+                        document.querySelector('#tab-btn-dispos').classList.remove('active');
+                        document.querySelector('#tab-btn-gen').classList.add('active');
+                        document.getElementById('view-dispos').classList.add('hidden');
+                        document.getElementById('view-gen').classList.remove('hidden');
+                        
+                        setTimeout(() => {
+                            // 3. Click "Générer" Button
+                            const btn = document.getElementById('start-btn').getBoundingClientRect();
+                            moveCursor(btn.left + 150, btn.top + 25, () => {
+                                clickAt(btn.left + 150, btn.top + 25, () => {
+                                    // LOADING STATE
+                                    document.getElementById('banner-text').innerText = "L'IA est en train de calculer le planning optimal...";
+                                    document.getElementById('btn-content').innerHTML = '<svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"></path></svg> Calcul en cours...';
+                                    document.getElementById('start-btn').classList.add('opacity-70', 'cursor-not-allowed');
+                                    document.getElementById('progress-bar-container').classList.remove('hidden');
+                                    
+                                    setTimeout(() => {
+                                        // 4. Success Card appears
+                                        document.getElementById('progress-bar-container').classList.add('hidden');
+                                        document.getElementById('banner-text').innerText = "Le planning a été généré avec succès.";
+                                        document.getElementById('btn-content').innerHTML = '<svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg> Relancer la génération';
+                                        document.getElementById('start-btn').classList.remove('opacity-70', 'cursor-not-allowed');
+                                        document.getElementById('success-card').classList.remove('hidden');
+                                        
+                                        setTimeout(() => {
+                                            // 5. Click "Consulter le planning"
+                                            const goBtn = document.getElementById('go-edit-btn').getBoundingClientRect();
+                                            moveCursor(goBtn.left + 150, goBtn.top + 25, () => {
+                                                clickAt(goBtn.left + 150, goBtn.top + 25, () => {
+                                                    document.querySelector('#tab-btn-gen').classList.remove('active');
+                                                    document.querySelector('#tab-btn-edit').classList.add('active');
+                                                    document.getElementById('view-gen').classList.add('hidden');
+                                                    document.getElementById('view-edition').classList.remove('hidden');
+                                                    
+                                                    // 6. Realistic scroll simulation
+                                                    setTimeout(() => {
+                                                      document.querySelector('#view-edition .overflow-y-auto').scrollTo({ top: 150, behavior: 'smooth' });
+                                                      
+                                                      setTimeout(() => {
+                                                        // 7. Click Publier
+                                                        const pubBtn = document.getElementById('publish-btn').getBoundingClientRect();
+                                                        moveCursor(pubBtn.left + 80, pubBtn.top + 25, () => {
+                                                          clickAt(pubBtn.left + 80, pubBtn.top + 25, () => {
+                                                            const toast = document.getElementById('published-toast');
+                                                            toast.style.opacity = '1';
+                                                            toast.style.transform = 'translateY(0)';
+                                                            animationFinished = true; checkEnd();
+                                                          });
+                                                        });
+                                                      }, 2000);
+                                                    }, 1500);
+                                                });
+                                            });
+                                        }, 2000);
+                                    }, 3000);
+                                });
+                            });
+                        }, 1200);
+                    });
+                });
+            }, 4000);
+        }, 1000);
+    }
+
+    window.onload = () => {
+        if (new URLSearchParams(window.location.search).get('autoplay') === 'true') {
+            startDemo();
+        }
+    };
+
+    window.addEventListener('message', (e) => {
+        if (e.data === 'play-audio') {
+            startDemo();
+        }
+    });
+
+    document.body.onclick = () => startDemo();
+  </script>
+</body>
+</html>
